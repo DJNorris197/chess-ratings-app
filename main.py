@@ -38,28 +38,51 @@ def get_player_rating(player_name):
     return None
 
 # Function to calculate ELO rating change
-def calculate_elo_change(player_rating, opponent_rating, result, k_factor=32):
+def calculate_elo_change(player_rating, opponent_rating, result, k_factor=None):
     """
     Calculate the rating change for a player based on ELO formula.
-    
+
+    K-factor tiers (used when `k_factor` is None):
+      - rating < 1800: K = 30
+      - 1800 <= rating <= 2200: K = 20
+      - rating > 2200: K = 10
+
     Args:
         player_rating: Player's current rating
-        opponent_rating: Opponent's current rating  
+        opponent_rating: Opponent's current rating
         result: Match result (1 for win, 0.5 for draw, 0 for loss)
-        k_factor: K-factor (default 32 for most players)
-    
+        k_factor: Optional override for K-factor. If None, tiers above are used.
+
     Returns:
-        Rating change (can be positive or negative)
+        Rating change (can be positive or negative) or None if inputs missing.
     """
     if player_rating is None or opponent_rating is None:
         return None
-    
+
+    # Determine K-factor if not provided
+    if k_factor is None:
+        try:
+            pr = float(player_rating)
+        except (TypeError, ValueError):
+            pr = None
+
+        if pr is None:
+            k = 32
+        elif pr < 1800:
+            k = 30
+        elif pr <= 2200:
+            k = 20
+        else:
+            k = 10
+    else:
+        k = k_factor
+
     # Calculate expected score
     expected_score = 1 / (1 + 10 ** ((opponent_rating - player_rating) / 400))
-    
+
     # Calculate rating change
-    rating_change = k_factor * (result - expected_score)
-    
+    rating_change = k * (result - expected_score)
+
     return round(rating_change)
 
 # Search for the name in Player 1 or Player 2 columns
