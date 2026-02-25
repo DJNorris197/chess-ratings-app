@@ -14,8 +14,47 @@ with open('data.csv', 'r') as file:
 # Load players data for rating lookup
 players_df = pd.read_csv('players.csv')
 
+# Load and display example players from eg_players.csv
+eg_players_df = pd.read_csv('eg_players.csv')
+
+# Filter for players with both firstname and lastname
+valid_players_df = eg_players_df[
+    (eg_players_df['firstname'].notna()) & 
+    (eg_players_df['firstname'].str.strip() != '') &
+    (eg_players_df['lastname'].notna()) & 
+    (eg_players_df['lastname'].str.strip() != '')
+].copy()
+
+# Create a full name column
+valid_players_df['Full Name'] = valid_players_df['firstname'].str.strip() + ' ' + valid_players_df['lastname'].str.strip()
+
+# Autocomplete player search (from eg_players.csv)
+if 'search_name' not in st.session_state:
+    st.session_state.search_name = ""
+
+st.write(f"**Total example players with first and last names: {len(valid_players_df)}**")
+
+# Use a selectbox with autocomplete for player names
+full_names = valid_players_df['Full Name'].sort_values().tolist()
+selected_name = st.selectbox(
+    "Type a player name (autocomplete from eg_players.csv):",
+    options=[""] + full_names,
+    index=full_names.index(st.session_state.search_name) + 1 if st.session_state.search_name in full_names else 0,
+    key="autocomplete_player"
+)
+
+if selected_name:
+    st.session_state.search_name = selected_name
+    search_name = selected_name
+else:
+    search_name = st.session_state.search_name
+
 # Get user input
-search_name = st.text_input("Enter a player name to search:")
+search_name = st.text_input("Enter a player name to search:", value=st.session_state.search_name)
+
+# Reset auto-collapse if user clears the search
+if search_name == "":
+    st.session_state.auto_collapse_players = False
 
 # Function to find player rating
 def get_player_rating(player_name):
